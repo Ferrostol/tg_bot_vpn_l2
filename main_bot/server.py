@@ -64,80 +64,32 @@ def write_users_to_file(users, server=None):
 
 def edit_multi_connect(enabled: bool):
     config.load_env()
+    vpn_all: bool = True # Проверяем надо ли что-то менять в настройках сервера
     env = enabled == config.multi_connect
 
-    def found(file, target):
-        found = False
-        with open(file, "r", encoding="utf-8") as f:
-            found = any(target in line for line in f)
-        return found
+    vpn_config: bool = open(config.multi_connect_conf).read().strip() == "yes"
 
-    def filtered_file(file):
-        start_marker = "#START_MULTI_CONNECT"
-        end_marker = "#END_MULTI_CONNECT"
+    if vpn_config != enabled:
+        open(config.multi_connect_conf, "w").write('yes' if enabled else 'no')
+        vpn_all = False
 
-        with open(file, "r", encoding="utf-8") as f:
-            lines = f.readlines()
+    if config.multi_connect != enabled:
+        set_key_env(config.multi_connect_key, 'Y' if enabled else 'N')
+        vpn_all = False
 
-        inside_block = False
-        filtered_lines = []
-
-        for line in lines:
-            if start_marker in line:
-                inside_block = True
-                continue  # пропустить строку с маркером начала
-            if end_marker in line:
-                inside_block = False
-                continue  # пропустить строку с маркером конца
-            if not inside_block:
-                filtered_lines.append(line)
-
-        with open(file, "w", encoding="utf-8") as f:
-            f.writelines(filtered_lines)
-
-    vpn_up_file: bool = found("/etc/ppp/ip-up", 'peer-lock.sh') == enabled
-    vpn_peer_file: bool = os.path.isfile('/etc/ppp/peer-lock.sh') == enabled
-    vpn_locks_path: bool = os.path.exists('/var/locks') == enabled
-    vpn_down_file: bool = found("/etc/ppp/ip-down", '/var/locks/') == enabled
-
-    count_need_edit = [vpn_up_file, vpn_peer_file, vpn_locks_path, vpn_down_file].count(True)
-    vpn_all: bool = count_need_edit == 0
-
-    if not enabled:
-        if not env:
-            set_key_env(config.multi_connect_key, 'N')
-        if vpn_up_file:
-            with open("/etc/ppp/ip-up", "ab") as out, open("../config/vpn_server/ip-up", "rb") as inp:
-                shutil.copyfileobj(inp, out)
-        if vpn_peer_file:
-            shutil.copy(
-                '../config/vpn_server/peer-lock.sh',
-                '/etc/ppp/peer-lock.sh'
-            )
-        if vpn_locks_path:
-            os.mkdir("/var/locks")
-            os.chmod('/var/locks', 0o777)
-        if vpn_down_file:
-            with open("/etc/ppp/ip-down", "ab") as out, open("../config/vpn_server/ip-down", "rb") as inp:
-                shutil.copyfileobj(inp, out)
-    else:
-        if not env:
-            set_key_env(config.multi_connect_key, 'Y')
-        if vpn_up_file:
-            filtered_file('/etc/ppp/ip-up')
-        if vpn_peer_file:
-            os.remove('/etc/ppp/peer-lock.sh')
-        if vpn_locks_path:
-            shutil.rmtree('/var/locks')
-        if vpn_down_file:
-            filtered_file('/etc/ppp/ip-down')
+    if not os.path.exists('/var/locks'):
+        os.mkdir("/var/locks")
+        os.chmod('/var/locks', 0o777)
 
     if count_need_edit > 0:
         reboot_vpn()
-    if env and vpn_all:
-        return 'Уже включен' if enabled else 'Уже выключен'
-    elif not env and vpn_all:
-        return 'Уже включен, просто был не изменен конфиг' if enabled else 'Уже выключен, просто был не изменен конфиг'
+
+    if vpn_all:
+        if env:
+            return 'Уже включен' if enabled else 'Уже выключен'
+        elif not env:
+            return 'Уже включен, просто был не изменен конфиг' if enabled else 'Уже выключен, просто был не изменен конфиг'
+    return None
 
 
 def reboot_server():

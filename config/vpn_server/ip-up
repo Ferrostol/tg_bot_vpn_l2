@@ -1,0 +1,10 @@
+value=$(</etc/ppp/multi_connect.conf)
+
+if [[ "$value" == "no" ]]; then
+    if [ -f "/var/locks/$PEERNAME.lock" ]; then
+        kill $PPPD_PID
+        exit 1
+    else
+        touch "$LOCKFILE"
+    fi
+fi

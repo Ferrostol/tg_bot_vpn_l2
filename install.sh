@@ -188,8 +188,7 @@ install_vpn() {
 
 setup_vpn() {
   if [[ "${INSTALL_VPN}" -eq 1 && "${SETUP_VPN}" -eq 1 ]]; then
-    cd "$CURRENT_DIR"/tg_bot_vpn_l2/src/config
-    cat vpn_server/options.xl2tpd >> /etc/ppp/options.xl2tpd
+    cd "$CURRENT_DIR"/tg_bot_vpn_l2/config
 
     if [[ "${MIDDLE_VPN}" -eq 1 ]]; then
       cd vpn_client
@@ -203,18 +202,12 @@ setup_vpn() {
       cat connect_client.service > /etc/systemd/system/connect_client.service
     fi
 
-    if [[ "$MULTI_CONNECT" =~ ^[Nn]$ ]]; then
-      if [ -f src/config/vpn_server/peer-lock.sh ]; then
-        cp src/config/vpn_server/peer-lock.sh /etc/ppp
-        mkdir -p /var/locks
-        chmod 777 /var/locks
-
-        if ! grep -q "peer-lock.sh" /etc/ppp/ip-up; then
-          cat src/config/vpn_server/ip-up >> /etc/ppp/ip-up
-        fi
-        cat src/config/vpn_server/ip-down >> /etc/ppp/ip-down
-      fi
-    fi
+    mkdir -p /var/locks
+    chmod 777 /var/locks
+    cat config/vpn_server/ip-up >> /etc/ppp/ip-up
+    cat config/vpn_server/ip-down >> /etc/ppp/ip-down
+    [[ "$MULTI_CONNECT" =~ ^[Yy]$ ]] && echo "yes" > /etc/ppp/multi_connect.conf
+    [[ "$MULTI_CONNECT" =~ ^[Nn]$ ]] && echo "no"  > /etc/ppp/multi_connect.conf
   fi
 }
 
@@ -231,7 +224,7 @@ install_sing_box() {
     cd "$CURRENT_DIR"
     bash <(curl -fsSL https://sing-box.app/install.sh)
 
-    cd tg_bot_vpn_l2/src/config/sing-box
+    cd tg_bot_vpn_l2/config/sing-box
 
     # Создаем папку для хранения конфигов
     mkdir -p "$CURRENT_DIR"/tg_bot_vpn_l2/others/sing-box
@@ -282,17 +275,22 @@ install_bot() {
     cd "$CURRENT_DIR"/tg_bot_vpn_l2
     /root/.python/bin/python3.12 -m venv venv
     . ./venv/bin/activate
-    pip install -r ./src/main_bot/requirements.txt
+    pip install -r ./main_bot/requirements.txt
 
-    cp ./src/config/vpn_bot.service /etc/systemd/system
+    cp ./config/vpn_bot.service /etc/systemd/system
     sed -i "s|/CURRENT_DIR/|$CURRENT_DIR/|g" /etc/systemd/system/vpn_bot.service
-    echo "TOKEN=$BOT_TOKEN" > src/.env
-    echo "USE_VPN=$USE_VPN" >> src/.env
-    if grep -q "peer-lock.sh" /etc/ppp/ip-up; then
-      echo "MULTI_CONNECT=N" >> src/.env
-    else
-      echo "MULTI_CONNECT=Y" >> src/.env
-    fi
+    echo "TOKEN=$BOT_TOKEN" > .env
+    echo "USE_VPN=$USE_VPN" >> .env
+    [[ "$MULTI_CONNECT" =~ ^[Yy]$ ]] && echo "MULTI_CONNECT=Y" >> .env
+    [[ "$MULTI_CONNECT" =~ ^[Nn]$ ]] && echo "MULTI_CONNECT=N"  >> .env
+
+    mkdir -p "$CURRENT_DIR"/tg_bot_vpn_l2/others
+    cd "$CURRENT_DIR"/tg_bot_vpn_l2/others
+    # Создаем ссылки на файлы vpn для использования в боте
+    ln -s '/var/run/pppd2.tdb' ppp_connect.dtb
+    ln -s '/etc/ipsec.secrets' ipsec_key.secrets
+    ln -s '/etc/ppp/chap-secrets' login_password_vpn
+    ln -s '/etc/ppp/multi_connect.conf' multi_connect.conf
   fi
 }
 
