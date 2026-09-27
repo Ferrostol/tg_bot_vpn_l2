@@ -120,9 +120,9 @@ install_zsh() {
 clone_git() {
   if [[ "${CLONE_GIT}" -eq 1 ]]; then
     cd "$CURRENT_DIR"
-    git clone https://github.com/Ferrostol/vpn_site.git
-    cd vpn_site
-    git switch tg_bot_editable
+    git clone https://github.com/Ferrostol/tg_bot_vpn_l2.git
+    cd tg_bot_vpn_l2
+    git switch final
     cd "$CURRENT_DIR"
   fi
 }
@@ -188,7 +188,7 @@ install_vpn() {
 
 setup_vpn() {
   if [[ "${INSTALL_VPN}" -eq 1 && "${SETUP_VPN}" -eq 1 ]]; then
-    cd "$CURRENT_DIR"/vpn_site/src/config
+    cd "$CURRENT_DIR"/tg_bot_vpn_l2/src/config
     cat vpn_server/options.xl2tpd >> /etc/ppp/options.xl2tpd
 
     if [[ "${MIDDLE_VPN}" -eq 1 ]]; then
@@ -231,23 +231,23 @@ install_sing_box() {
     cd "$CURRENT_DIR"
     bash <(curl -fsSL https://sing-box.app/install.sh)
 
-    cd vpn_site/src/config/sing-box
+    cd tg_bot_vpn_l2/src/config/sing-box
 
     # Создаем папку для хранения конфигов
-    mkdir -p "$CURRENT_DIR"/vpn_site/others/sing-box
+    mkdir -p "$CURRENT_DIR"/tg_bot_vpn_l2/others/sing-box
     # Скрипт для инициализации маршрута от L2TP до sing-box
-    cp sing_init.sh "$CURRENT_DIR"/vpn_site/others/sing-box/
-    chmod +x "$CURRENT_DIR"/vpn_site/others/sing-box/sing_init.sh
-    sed -i "s|VPN_L2TP_NET|${VPN_L2TP_NET%%/*}|g" "$CURRENT_DIR"/vpn_site/others/sing_init.sh
+    cp sing_init.sh "$CURRENT_DIR"/tg_bot_vpn_l2/others/sing-box/
+    chmod +x "$CURRENT_DIR"/tg_bot_vpn_l2/others/sing-box/sing_init.sh
+    sed -i "s|VPN_L2TP_NET|${VPN_L2TP_NET%%/*}|g" "$CURRENT_DIR"/tg_bot_vpn_l2/others/sing_init.sh
 
     # Создаем демона для инициализации маршрута от L2TP до sing-box
     cat sing_init.service > /etc/systemd/system/sing_init.service
     sed -i "s|/CURRENT_DIR/|$CURRENT_DIR/|g" /etc/systemd/system/sing_init.service
 
     # Скрипт для выбора конфига распределения трафика sing-box
-    cp select_config.sh "$CURRENT_DIR"/vpn_site/others/sing-box/
-    chmod +x "$CURRENT_DIR"/vpn_site/others/sing-box/select_config.sh
-    sed -i "s|/CURRENT_DIR/|$CURRENT_DIR/|g" "$CURRENT_DIR"/vpn_site/others/sing-box/select_config.sh
+    cp select_config.sh "$CURRENT_DIR"/tg_bot_vpn_l2/others/sing-box/
+    chmod +x "$CURRENT_DIR"/tg_bot_vpn_l2/others/sing-box/select_config.sh
+    sed -i "s|/CURRENT_DIR/|$CURRENT_DIR/|g" "$CURRENT_DIR"/tg_bot_vpn_l2/others/sing-box/select_config.sh
 
     # Создание демона для выбора конфига распределения трафика
     cat sing_config.service > /etc/systemd/system/sing_config.service
@@ -279,7 +279,7 @@ install_python() {
 
 install_bot() {
   if [[ "${INSTALL_BOT}" -eq 1 ]]; then
-    cd "$CURRENT_DIR"/vpn_site
+    cd "$CURRENT_DIR"/tg_bot_vpn_l2
     /root/.python/bin/python3.12 -m venv venv
     . ./venv/bin/activate
     pip install -r ./src/main_bot/requirements.txt

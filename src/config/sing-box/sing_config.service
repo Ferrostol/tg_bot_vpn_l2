@@ -4,4 +4,4 @@ After=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/CURRENT_DIR/vpn_site/others/sing-box/select_config.sh
+ExecStart=/CURRENT_DIR/tg_bot_vpn_l2/others/sing-box/select_config.sh

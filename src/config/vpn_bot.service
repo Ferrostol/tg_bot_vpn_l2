@@ -5,9 +5,9 @@ After=network.target
 [Service]
 User=root
 Group=root
-WorkingDirectory=/CURRENT_DIR/vpn_site/src/main_bot
-Environment="PATH=/CURRENT_DIR/vpn_site/venv/bin"
-ExecStart=/CURRENT_DIR/vpn_site/venv/bin/python3 -u /CURRENT_DIR/vpn_site/src/main_bot/app.py
+WorkingDirectory=/CURRENT_DIR/tg_bot_vpn_l2/src/main_bot
+Environment="PATH=/CURRENT_DIR/tg_bot_vpn_l2/venv/bin"
+ExecStart=/CURRENT_DIR/tg_bot_vpn_l2/venv/bin/python3 -u /CURRENT_DIR/tg_bot_vpn_l2/src/main_bot/app.py
 Restart=always
 
 [Install]

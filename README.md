@@ -2,7 +2,7 @@
 
 Выполнить команды
 
-    curl https://raw.githubusercontent.com/Ferrostol/vpn_site/refs/heads/tg_bot_editable/install.sh >> install.sh
+    curl https://raw.githubusercontent.com/Ferrostol/tg_bot_vpn_l2/refs/heads/final/install.sh >> install.sh
     chmod +x install.sh
     ./install.sh
 
