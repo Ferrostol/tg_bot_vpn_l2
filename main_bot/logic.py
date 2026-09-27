@@ -10,23 +10,8 @@ def start_program():
     database.create_all_tables()
     # Добавление текущего сервера в список серверов
     if database.get_count_servers() == 0:
-        with open(config.ipsec_conf, 'r') as f:
-            connects = [el for el in f.read().splitlines('conn') if 'leftid=' in el]
-            for conn in connects:
-                ip = [el for el in conn.split('\n') if 'leftid=' in el][0]
-                if ip.count('.') == 3:
-                    database.add_server('main', None, ip, True)
-                else:
-                    database.add_server('main', ip, None, True)
-                break
-        with open(config.ipsec_cl_conf, 'r') as f:
-            for line in f.readlines():
-                if 'right=' in line:
-                    ip=line.split('=')[1].strip()
-                    if ip.count('.') == 3:
-                        database.add_server('vpn', None, ip, False)
-                    else:
-                        database.add_server('vpn', ip, None, False)
+        database.add_server('main', 'localhost', None, True)
+        database.add_server('vpn', 'others', None, False)
     curr_server = [el[0] for el in database.get_all_servers() if el[4]][-1]
 
     # Проверка добавления текущих vpn пользователей

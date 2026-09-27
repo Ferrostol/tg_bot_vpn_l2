@@ -1,0 +1,21 @@
+FROM alpine:3.24.2
+
+RUN apk cache clean && \
+    apk update && \
+    apk add python3 && \
+    apk add py-pip && \
+    rm -rf /var/cache/apk/
+
+WORKDIR /app
+
+COPY ./main_bot/requirements.txt .
+
+RUN python3 -m venv /app/venv && \
+    /app/venv/bin/pip install --no-cache-dir -r requirements.txt
+
+
+RUN mkdir -p ./others
+
+COPY ./main_bot .
+
+CMD ["/app/venv/bin/python", "app.py"]

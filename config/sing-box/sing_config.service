@@ -1,0 +1,7 @@
+[Unit]
+Description=Check mnl and switch sing-box config
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/CURRENT_DIR/tg_bot_vpn_l2/others/sing-box/select_config.sh && /CURRENT_DIR/tg_bot_vpn_l2/others/sing-box/reconnect_vpn.sh

@@ -1,9 +1,0 @@
-#START_MULTI_CONNECT
-if [ -x /etc/ppp/peer-lock.sh ]; then
-    /etc/ppp/peer-lock.sh
-    if [ $? -ne 0 ]; then
-      kill $PPPD_PID
-      exit 1
-    fi
-fi
-#END_MULTI_CONNECT
