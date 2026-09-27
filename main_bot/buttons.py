@@ -316,16 +316,8 @@ start_buttons = Button('start', 'Начало', 'Выберите действи
                 for name, visible in zip(['on', 'off'], [not config.multi_connect, config.multi_connect])
             ])
         ]),
-        Button('reboot_vpn', 'Перезагрузить VPN', 'Перезагрузить?', can_back=True, buttons=[
-            Button('confirm', '100% Да', is_work=True, work_def= lambda self_btn, chat_id, *args: (
-                (reboot_vpn(), Result(self_btn.get_prev_button(chat_id, True), 'Перезагружено'))[-1]
-            ))
-        ]),
-        Button('reboot_server', 'Перезагрузить сервер', can_back=True, buttons=[
-            Button('confirm', '100% Да', is_work=True, work_def= lambda self_btn, *args: reboot_server())
-        ]),
         Button('update_bot', 'Обновить бота', can_back=True, buttons=[
-            Button('confirm', '100% Да', is_work=True, work_def= lambda self_btn, *args: update_bot())
+            Button('confirm', '100% Да', is_work=True, work_def= lambda self_btn, chat_id, role, bot, *args: update_bot(bot))
         ]),
         Button('export_db', 'Экспорт БД', can_back=True, buttons=[
             Button('confirm', '100% Да', is_work=True,
@@ -339,7 +331,7 @@ start_buttons = Button('start', 'Начало', 'Выберите действи
                 Result(self_btn, 'Пришлите файл БД', make_recursive_lambda(lambda self_func, _, __, message, *args_1: (
                     Result(self_btn, 'Некорректный файл', self_func)
                     if not message.document
-                    else (logic.get_file_and_save(bot, message, f"{config.database_file}"), write_users_to_file([(els[0], els[1]) for els in get_all_username_vpn(enabled=1)]), restart_bot())
+                    else (logic.get_file_and_save(bot, message, f"{config.database_file}"), write_users_to_file([(els[0], els[1]) for els in get_all_username_vpn(enabled=1)]), restart_bot(bot))
                 ))))
             )
         ]),

@@ -1,0 +1,23 @@
+  sing-box:
+    image: ghcr.io/sagernet/sing-box:v1.14.2
+    container_name: sing_box_container
+    volumes:
+      - /CURRENT_DIR/sing-box:/etc/sing-box/
+      - /CURRENT_DIR/tg_bot_vpn_l2/config/sing-box/:/etc/sing-box-all/
+    restart: always
+    depends_on:
+      - vpn
+    network_mode: "container:ipsec_server_container"
+    command:
+      - -D
+      - /var/lib/sing-box
+      - -C
+      - /etc/sing-box/
+      - run
+    healthcheck:
+      test: [ "CMD", "/etc/sing-box/select_config.sh" ]
+      interval: 5s
+      timeout: 3s
+      retries: 1
+      start_period: 1s
+

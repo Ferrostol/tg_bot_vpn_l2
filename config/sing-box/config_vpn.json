@@ -32,6 +32,11 @@
       "domain_resolver": "dns-direct"
     }
   ],
+  "http_clients": [
+    {
+      "tag": "download-client"
+    }
+  ],
   "route": {
     "default_domain_resolver": "dns-direct",
 
@@ -40,21 +45,21 @@
         "tag": "geoip-ru",
         "type": "remote",
         "format": "binary",
-        "download_detour": "direct",
+        "http_client": "download-client",
         "url": "https://raw.githubusercontent.com/runetfreedom/russia-v2ray-rules-dat/refs/heads/release/sing-box/rule-set-geoip/geoip-ru.srs"
       },
       {
         "tag": "geosite-ru",
         "type": "remote",
         "format": "binary",
-        "download_detour": "direct",
+        "http_client": "download-client",
         "url": "https://raw.githubusercontent.com/runetfreedom/russia-v2ray-rules-dat/refs/heads/release/sing-box/rule-set-geosite/geosite-ru-available-only-inside.srs"
       },
       {
         "tag": "geosite-proxy",
         "type": "remote",
         "format": "binary",
-        "download_detour": "direct",
+        "http_client": "download-client",
         "url": "https://raw.githubusercontent.com/runetfreedom/russia-v2ray-rules-dat/refs/heads/release/sing-box/rule-set-geosite/geosite-ru-blocked-all.srs"
       }
     ],

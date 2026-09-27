@@ -1,0 +1,17 @@
+  bot:
+    build:
+      context: ..
+      dockerfile: docker/DockerfileBot
+    container_name: my_bot_container
+    volumes:
+      - /CURRENT_DIR/bot/.env:/app/.env
+      - /CURRENT_DIR/bot/users.db:/app/others/users.db
+      - /CURRENT_DIR/vpn/ppp_connect.tdb:/app/others/ppp_connect.tdb
+      - /CURRENT_DIR/vpn/login_password_vpn:/app/others/login_password_vpn
+      - /CURRENT_DIR/vpn/ipsec_key.secrets:/app/others/ipsec_key.secrets
+      - /CURRENT_DIR/vpn/multi_connect.conf:/app/others/multi_connect.conf
+    restart: always
+    network_mode: "container:ipsec_server_container"
+    depends_on:
+      - vpn
+
