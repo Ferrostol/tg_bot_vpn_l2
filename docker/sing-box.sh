@@ -30,6 +30,9 @@ install_box() {
   docker run -d \
     --name="$CONTAINER_BOX" \
     --restart=always \
+    --network=host \
+    --cap-add=NET_ADMIN \
+    --cap-add=NET_RAW \
     -v "$CURRENT_DIR/sing-box":/etc/sing-box/ \
     "$IMAGE_BOX" \
     -D /var/lib/sing-box \
