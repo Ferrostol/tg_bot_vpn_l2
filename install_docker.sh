@@ -41,6 +41,7 @@ prompt_until_nonempty_yn() {
 configure_vars() {
   prompt_until_nonempty_yn SYSTEM_SETUP "Выполнить базовую настройку системы?" "Y"
   prompt_until_nonempty_yn MIDDLE_SERVER "Текущий сервер является промежуточным?" "Y"
+  prompt_until_nonempty OS_SYSTEM "Какую ОС использовать для VPN?(1-Alpine, 2-Debian)" "1"
 
   prompt_until_nonempty DOMAIN "Введите домен для текущего сервера" ""
   prompt_until_nonempty_yn MULTI_CONNECT "Разрешить одновременные подключения к VPN" "Y"
@@ -147,19 +148,32 @@ EOF
   cd "$CURRENT_DIR/tg_bot_vpn_l2/"
   cp ./config/vpn_server/ip-up "$CURRENT_DIR/vpn/ip-up"
   chmod +x "$CURRENT_DIR/vpn/ip-up"
-  sed -i '1i#!/bin/bash' "$CURRENT_DIR/vpn/ip-up"
+  sed -i '1i#!/bin/sh' "$CURRENT_DIR/vpn/ip-up"
   cp ./config/vpn_server/ip-down "$CURRENT_DIR/vpn/ip-down"
   chmod +x "$CURRENT_DIR/vpn/ip-down"
-  sed -i '1i#!/bin/bash' "$CURRENT_DIR/vpn/ip-down"
+  sed -i '1i#!/bin/sh' "$CURRENT_DIR/vpn/ip-down"
 
-  touch ./others/iptables_setup.sh
-  echo "/opt/src/iptables_setup.sh" >> "$CURRENT_DIR/vpn/ip-up"
-
+  cat ./docker/composeVPN.yaml >> ./others/docker-compose.yaml
 
   if [[ "$MIDDLE_SERVER" =~ ^[Yy]$ ]]; then
-    sed 's/DOCKER_FILE_VPN/DockerfileAllVPN/g' ./docker/composeVPN.yaml >> ./others/docker-compose.yaml
+    cp ./docker/DockerfileAllVPN ./others/DockerfileVPN
   else
-    sed 's/DOCKER_FILE_VPN/DockerfileOnlyInVPN/g' ./docker/composeVPN.yaml >> ./others/docker-compose.yaml
+    cp ./docker/DockerfileOnlyInVPN ./others/DockerfileVPN
+  fi
+
+  # Выбор ОС образа VPN
+  if [[ "${OS_SYSTEM}" -eq 1 ]]; then
+    # Alpine
+    sed -i '2a RUN apk add tdb' ./others/DockerfileVPN
+    sed -i '2a COPY --from=builder /out/usr/sbin/xl2tpd /usr/sbin/xl2tpd' ./others/DockerfileVPN
+    sed -i '2a COPY --from=builder /out/usr/sbin/xl2tpd-control /usr/sbin/xl2tpd-control' ./others/DockerfileVPN
+    sed -i '0r ./docker/DockerfileFixAlpine' ./others/DockerfileVPN
+  else
+    # Debian
+    sed -i '1s/$/:debian/' ./others/DockerfileVPN
+    sed -i '2a RUN apt update && apt install tdb-tools iputils-ping -y' ./others/DockerfileVPN
+    sed -i "s|/run/ppp/|/run/|g" ./others/DockerfileVPN
+    sed -i "s|/run/ppp/|/run/|g" ./others/docker-compose.yaml
   fi
 }
 
@@ -173,6 +187,9 @@ setup_middle_server() {
   cp ./sing-box/config_eth0.json "$CURRENT_DIR/sing-box/config.json"
   cp ./sing-box/select_config.sh "$CURRENT_DIR/sing-box/select_config.sh"
   chmod +x "$CURRENT_DIR/sing-box/select_config.sh"
+
+  touch ../others/iptables_setup.sh
+  echo "/opt/src/iptables_setup.sh" >> "$CURRENT_DIR/vpn/ip-up"
   cat ./sing-box/sing_init.sh >> ../others/iptables_setup.sh
   sed -i "s|VPN_L2TP_NET|${VPN_L2TP_NET}|g" ../others/iptables_setup.sh
 

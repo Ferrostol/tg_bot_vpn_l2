@@ -1,7 +1,7 @@
   vpn:
     build:
       context: ..
-      dockerfile: docker/DOCKER_FILE_VPN
+      dockerfile: others/DockerfileVPN
     container_name: ipsec_server_container
     ports:
       - "500:500/udp"
@@ -10,7 +10,7 @@
       - /CURRENT_DIR/vpn/.env
     volumes:
       - /CURRENT_DIR/vpn/ikev2:/etc/ipsec.d
-      - /CURRENT_DIR/vpn/ppp_connect.tdb:/var/run/pppd2.tdb
+      - /CURRENT_DIR/vpn/ppp_connect.tdb:/var/run/ppp/pppd2.tdb
       - /CURRENT_DIR/vpn/login_password_vpn:/etc/ppp/chap-secrets
       - /CURRENT_DIR/vpn/ipsec_key.secrets:/etc/ipsec.secrets
       - /CURRENT_DIR/vpn/multi_connect.conf:/etc/ppp/multi_connect.conf
