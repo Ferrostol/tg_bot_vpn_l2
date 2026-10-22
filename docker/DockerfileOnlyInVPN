@@ -4,7 +4,5 @@ WORKDIR /opt/src
 # 1. Исправляем в ikev2.sh автоподключение к впн для мобильной связи
 # 2. В run.sh убираем перезапись пользователей
 RUN sed -i "s|Disconnect|Сonnect|g" ikev2.sh \
-    && awk '/^[[:space:]]*cat (>>|>) \/etc\/ppp\/chap-secrets <<EOF$/ { print "if [ ! -s /etc/ppp/chap-secrets ]; then"; inside=1 } { print } inside && /^EOF$/ { print "fi"; inside=0 }' run.sh > run.sh.tmp && cat run.sh.tmp > run.sh && rm run.sh.tmp
-
-
-CMD ["sh", "-c", "echo \"\" > /var/run/ppp/pppd2.tdb && /opt/src/run.sh"]
+    && awk '/^[[:space:]]*cat (>>|>) \/etc\/ppp\/chap-secrets <<EOF$/ { print "if [ ! -s /etc/ppp/chap-secrets ]; then"; inside=1 } { print } inside && /^EOF$/ { print "fi"; inside=0 }' run.sh > run.sh.tmp && cat run.sh.tmp > run.sh && rm run.sh.tmp \
+    && sed -i '$ i\echo \"\" > /var/run/ppp/pppd2.tdb' run.sh
