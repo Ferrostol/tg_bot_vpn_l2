@@ -243,10 +243,6 @@ install_sing_box() {
     sed -i "s|/CURRENT_DIR/|$CURRENT_DIR/|g" "$CURRENT_DIR"/tg_bot_vpn_l2/others/sing-box/select_config.sh
     sed -i "s|/kill 1/|systemctl restart sing-box/|g" "$CURRENT_DIR"/tg_bot_vpn_l2/others/sing-box/select_config.sh
 
-    # Скрипт для переподключения к vpn серверу
-    cp ../vpn_client/reconnect_vpn.sh "$CURRENT_DIR"/tg_bot_vpn_l2/others/sing-box/
-    chmod +x "$CURRENT_DIR"/tg_bot_vpn_l2/others/sing-box/reconnect_vpn.sh
-
     # Создание демона для выбора конфига распределения трафика
     cat sing_config.service > /etc/systemd/system/sing_config.service
     sed -i "s|/CURRENT_DIR/|$CURRENT_DIR/|g" /etc/systemd/system/sing_config.service

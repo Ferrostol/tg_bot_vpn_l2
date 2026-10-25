@@ -5,16 +5,14 @@ WORKDIR /opt/src
 # 2. В ikev2.sh добавляем вызов скрипта для соединения conn ikev2-cp
 # 3. В run.sh добавляем считывание конфига для внешнего подключения
 # 4. В run.sh убираем перезапись пользователей
+# 5. Очищаем журнал сессий l2tp
+# 6. Подключаемся к удаленному серверу в качестве клиента
 RUN sed -i "s|Disconnect|Сonnect|g" ikev2.sh \
     && sed -i '/^conn ikev2-cp$/a\  leftupdown=/opt/src/iptables_setup.sh' ikev2.sh \
     && sed -i "$(printf '%s\n' '/\/etc\/xl2tpd\/xl2tpd.conf/,/^EOF$/ {' '/^EOF$/a cat /etc/xl2tpd/configs/*.conf >> /etc/xl2tpd/xl2tpd.conf' '}')" run.sh \
     && awk '/^[[:space:]]*cat (>>|>) \/etc\/ppp\/chap-secrets <<EOF$/ { print "if [ ! -s /etc/ppp/chap-secrets ]; then"; inside=1 } { print } inside && /^EOF$/ { print "fi"; inside=0 }' run.sh > run.sh.tmp  && cat run.sh.tmp > run.sh && rm run.sh.tmp \
     && sed -i '$ i\echo \"\" > /var/run/pppd2.tdb' run.sh \
-    && sed -i '$ s/$/ \& while true; do .\/reconnect_vpn.sh; done/' run.sh
-
+    && sed -i '$s/^/\(sleep 2 \&\& echo \"c vpn\" \> \/var\/run\/xl2tpd\/l2tp-control\) \& /' run.sh
 
 COPY ./others/iptables_setup.sh iptables_setup.sh
 RUN chmod +x iptables_setup.sh
-
-COPY ./config/vpn_client/reconnect_vpn.sh .
-RUN chmod 755 /opt/src/reconnect_vpn.sh

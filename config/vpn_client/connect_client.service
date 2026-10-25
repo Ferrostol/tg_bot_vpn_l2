@@ -6,7 +6,7 @@ After=xl2tpd.service
 
 [Service]
 Type=oneshot
-ExecStart=/bin/sh -c 'sleep 5; ipsec up l2tp-client; sleep 5; echo "c vpn" > /var/run/xl2tpd/l2tp-control'
+ExecStart=/bin/sh -c 'sleep 5; echo "c vpn" > /var/run/xl2tpd/l2tp-control'
 RemainAfterExit=yes
 
 [Install]

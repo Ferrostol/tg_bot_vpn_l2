@@ -1,13 +1,32 @@
 #!/bin/bash
 STATE_FILE=/run/singbox_if
+OLD=$(cat $STATE_FILE 2>/dev/null)
 
-if ping -I vpn 1.1.1.1 -c 2 -W 1 >/dev/null 2>&1; then
+INTERFACE="vpn"
+TARGET="1.1.1.1"
+COUNT=2
+TIMEOUT=1
+
+# Первичная попытка пинга через указанный интерфейс.
+if ping -I "$INTERFACE" -c "$COUNT" -W "$TIMEOUT" "$TARGET" >/dev/null 2>&1; then
     NEW=vpn
 else
-    NEW=eth0
+    if [ "$OLD" = "eth0" ]; then
+        NEW=eth0
+    else
+        if ip link show dev "$INTERFACE" 2>/dev/null | grep -q "state UNKNOWN"; then
+            sleep 5
+            if ping -I "$INTERFACE" -c "$COUNT" -W "$TIMEOUT" "$TARGET" >/dev/null 2>&1; then
+                NEW=vpn
+            else
+                NEW=eth0
+            fi
+        else
+            NEW=eth0
+        fi
+    fi
 fi
 
-OLD=$(cat $STATE_FILE 2>/dev/null)
 
 if [ "$NEW" != "$OLD" ]; then
     echo $NEW > $STATE_FILE
