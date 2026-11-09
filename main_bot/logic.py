@@ -19,7 +19,7 @@ def start_program():
         password = server.get_current_users_vpn()
         if len(password) > 0:
             for passw in password:
-                database.add_user(passw[0], passw[1], curr_server)
+                database.add_user(passw[0], passw[1], curr_server, passw[2])
 
 
 

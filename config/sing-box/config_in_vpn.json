@@ -1,0 +1,41 @@
+{
+  "log": {
+    "level": "debug"
+  },
+  "inbounds": [
+    {
+      "type": "tproxy",
+      "tag": "l2tp-in",
+      "listen": "127.0.0.1",
+      "listen_port": 12345
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "inet",
+      "bind_interface": "vpn"
+    }
+  ],
+  "route": {
+    "rules": [
+      {
+        "inbound": "l2tp-in",
+        "action": "sniff"
+      },
+      {
+        "inbound": "l2tp-in",
+        "protocol": "dns",
+        "action": "hijack-dns"
+      },
+      {
+        "inbound": "l2tp-in",
+        "outbound": "inet"
+      },
+      {
+        "protocol": "dns",
+        "action": "hijack-dns"
+      }
+    ]
+  }
+}

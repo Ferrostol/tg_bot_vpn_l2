@@ -39,7 +39,9 @@ def create_all_tables(cursor):
                     username TEXT NOT NULL,
                     password TEXT NOT NULL,
                     status INTEGER NOT NULL default 1,
-                    server INTEGER REFERENCES servers NOT NULL)''')
+                    server INTEGER REFERENCES servers NOT NULL,
+                    combine BOOLEAN not null default false
+                    )''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS tg_users
                     (id INTEGER PRIMARY KEY AUTOINCREMENT,
                     telegram_user_id TEXT NOT NULL,
@@ -55,8 +57,8 @@ def create_all_tables(cursor):
 
 # Работа с пользователями из таблицы users
 @job_database
-def add_user(cursor, username, password, server):
-    cursor.execute("INSERT INTO users (username, password, server) VALUES (?, ?, ?)", (username, password, server))
+def add_user(cursor, username, password, server, combine):
+    cursor.execute("INSERT INTO users (username, password, server, combine) VALUES (?, ?, ?, ?)", (username, password, server, combine))
     return 'edit'
 
 @job_database
@@ -78,11 +80,11 @@ def enable_user_vpn(cursor, username, enabled, server):
 
 @job_database
 def get_all_username_vpn(cursor, server = None, enabled=None):
-    cursor.execute("SELECT username, password, status, server FROM users where coalesce(?, status) = status and coalesce(?, server) = server"
+    cursor.execute("SELECT username, password, status, server, combine FROM users where coalesce(?, status) = status and coalesce(?, server) = server"
                    , (enabled, server))
     users = cursor.fetchall()
     if not server is None:
-        users = [usr[:-1] for usr in users]
+        users = [usr[:3] + usr[4:] for usr in users]
     return users
 
 

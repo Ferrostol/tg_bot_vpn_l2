@@ -224,8 +224,8 @@ start_buttons = Button('start', 'Начало', 'Выберите действи
                                       if not self.check_secure_user(password_role)
                                       else Result(self.prev_button, f'Пользователь создан\nЛогин:{login}\nПароль:{password}\nОбщий ключ:{get_ipsec_key()}')
                                       if (
-                                          add_user(login, password, server_id),
-                                          write_users_to_file([(el[0], el[1]) for el in get_all_username_vpn(server=server_id, enabled=1)], server=server_id),
+                                          add_user(login, password, server_id, 0), # TODO: Доделать выбор combine
+                                          write_users_to_file([(el[0], el[1], el[4]) for el in get_all_username_vpn(server=server_id, enabled=1)], server=server_id),
                                           len([el for el in get_all_username_vpn(server=server_id) if el[0] == login])
                                       )[-1] > 0
                                       else Result(self.prev_button, "Пользователь не создан")
@@ -243,7 +243,7 @@ start_buttons = Button('start', 'Начало', 'Выберите действи
                                              f"Ошибка при разблокировки пользователя {el1}"
                                              if not enable_user_vpn(el0, 1, server_id) == 'edit'
                                              else "Пользователь разблокирован"
-                                             if (err := write_users_to_file([(els[0], els[1]) for els in get_all_username_vpn(server=server_id, enabled=1)], server=server_id)) is None
+                                             if (err := write_users_to_file([(els[0], els[1], els[4]) for els in get_all_username_vpn(server=server_id, enabled=1)], server=server_id)) is None
                                              else f"Ошибка при разблокировки пользователя {el1}. Ошибка {err}")
                                   )))())
                               for el in get_all_username_vpn(server=server_id, enabled=0)
@@ -257,7 +257,7 @@ start_buttons = Button('start', 'Начало', 'Выберите действи
                                              f"Ошибка при блокировке пользователя {el1}"
                                              if not enable_user_vpn(el0, 0, server_id) == 'edit'
                                              else "Пользователь заблокирован"
-                                             if (err := write_users_to_file([(els[0], els[1]) for els in get_all_username_vpn(enabled=1)], server=server_id)) is None
+                                             if (err := write_users_to_file([(els[0], els[1], els[4]) for els in get_all_username_vpn(enabled=1)], server=server_id)) is None
                                              else f"Ошибка при блокировке пользователя {el1}. Ошибка {err}")
                                   )))())
                               for el in get_all_username_vpn(server=server_id, enabled=1)
@@ -271,7 +271,7 @@ start_buttons = Button('start', 'Начало', 'Выберите действи
                                              f"Ошибка при удалении пользователя {el0}"
                                              if not delete_vpn_user(el0, server_id) == 'edit'
                                              else "Пользователь удален"
-                                             if (err := write_users_to_file([(els[0], els[1]) for els in get_all_username_vpn(enabled=1)], server=server_id)) is None
+                                             if (err := write_users_to_file([(els[0], els[1], els[4]) for els in get_all_username_vpn(enabled=1)], server=server_id)) is None
                                              else f"Пользователь удален. Ошибка при обновлении файла с доступами. Ошибка {err}")
                                   )))())
                               for el in get_all_username_vpn(server=server_id)
@@ -295,7 +295,7 @@ start_buttons = Button('start', 'Начало', 'Выберите действи
                           work_def=lambda self, chat_id, *arg, server_id=srv[0]: (
                               Result(self.prev_button, "Список пользователей пуст")
                               if not len((data := get_all_username_vpn(server=server_id)))
-                              else Result(self, get_table_str(['USR', 'PASSWORD', 'STATUS'], data))
+                              else Result(self, get_table_str(['USR', 'PASSWORD', 'STATUS', 'COMBINE'], data))
                           ))
                ]) for srv in get_all_servers()
            ], analize=lambda x, chat_id, *args: None if get_count_servers() > 1 else Result(x.get_prev_button(chat_id), 'Отсутствуют сервера VPN')),
@@ -331,14 +331,14 @@ start_buttons = Button('start', 'Начало', 'Выберите действи
                 Result(self_btn, 'Пришлите файл БД', make_recursive_lambda(lambda self_func, _, __, message, *args_1: (
                     Result(self_btn, 'Некорректный файл', self_func)
                     if not message.document
-                    else (logic.get_file_and_save(bot, message, f"{config.database_file}"), write_users_to_file([(els[0], els[1]) for els in get_all_username_vpn(enabled=1)]), restart_bot(bot))
+                    else (logic.get_file_and_save(bot, message, f"{config.database_file}"), write_users_to_file([(els[0], els[1], els[4]) for els in get_all_username_vpn(enabled=1)]), restart_bot(bot))
                 ))))
             )
         ]),
         Button('update_file_users','Обновить пользователей VPN', can_back=True, buttons=[
             Button('confirm', '100% Да', is_work=True, can_back=True, work_def= lambda self_btn, *args: (
                 Result(self_btn, "Файл с пользователям обновлен"
-                                  if (err := write_users_to_file([(els[0], els[1]) for els in get_all_username_vpn(enabled=1)])) is None
+                                  if (err := write_users_to_file([(els[0], els[1], els[4]) for els in get_all_username_vpn(enabled=1)])) is None
                                   else f"Ошибка при обновлении файла с доступами. Ошибка {err}")
             ))
         ])
