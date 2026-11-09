@@ -30,7 +30,7 @@ fi
 
 if [ "$NEW" != "$OLD" ]; then
     echo $NEW > $STATE_FILE
-    cat /etc/sing-box-all/config_$NEW.json > /etc/sing-box/config.json
+    cat /etc/sing-box/config_$NEW.json > /etc/sing-box/config.json
     kill 1
 fi
 

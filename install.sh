@@ -39,32 +39,55 @@ prompt_until_nonempty_yn() {
 
 # Получение конфигов для запуска
 configure_vars() {
-  prompt_until_nonempty_yn SYSTEM_SETUP "Выполнить базовую настройку системы?" "Y"
-  prompt_until_nonempty_yn MIDDLE_SERVER "Текущий сервер является промежуточным?" "Y"
+  # Базовая информация по серверу
+  prompt_until_nonempty_yn SYSTEM_SETUP "Выполнить базовую настройку системы?" "N"
   prompt_until_nonempty OS_SYSTEM "Какую ОС использовать для VPN?(1-Alpine, 2-Debian)" "1"
+
+  # Какой вариант схемы использования развертывать на сервере
+  prompt_until_nonempty TYPE_SERVER "Тип настройки сервера?(1-конечный, 2-промежуточным, 3-комбинированный)" "1"
+  prompt_until_nonempty_yn AUTO_NET "Использовать рекомендуемую подсеть?" "Y"
+  prompt_until_nonempty PSK_KEY "Введите PSK_KEY (Pre-Shared Key)(PSK_KEY)" "psk"
 
   prompt_until_nonempty DOMAIN "Введите домен для текущего сервера" ""
   prompt_until_nonempty_yn MULTI_CONNECT "Разрешить одновременные подключения к VPN" "Y"
 
+  # Настройка основного сервера
   prompt_until_nonempty USERNAME_LOGIN "Введите имя пользователя создаваемого VPN (USERNAME_LOGIN)" "login"
   prompt_until_nonempty USERNAME_PASSWORD "Введите пароль пользователя создаваемого VPN (USERNAME_PASSWORD)" "password"
-  prompt_until_nonempty PSK_KEY "Введите PSK_KEY (Pre-Shared Key)(PSK_KEY)" "psk"
 
-  if [[ "${MIDDLE_SERVER}" =~ ^[Yy]$ ]]; then
-    prompt_until_nonempty VPN_L2TP_NET "Укажите подсеть (VPN_L2TP_NET)" "10.1.0.0"
-    export VPN_L2TP_LOCAL="${VPN_L2TP_NET%.*}.1"
-    export VPN_L2TP_POOL="${VPN_L2TP_NET%.*}.10-${VPN_L2TP_NET%.*}.254"
+  # Настройка сети для впн
+  if [[ "$AUTO_NET" =~ ^[Yy]$ ]]; then
+    if [[ "${TYPE_SERVER}" -eq 2 ]]; then
+      export VPN_L2TP_NET="10.1.0.0"
+    else
+      export VPN_L2TP_NET="192.168.42.0"
+    fi
+  else
+    if [[ "${TYPE_SERVER}" -eq 2 ]]; then
+      prompt_until_nonempty VPN_L2TP_NET "Укажите подсеть (VPN_L2TP_NET)" "10.1.0.0"
+    else
+      prompt_until_nonempty VPN_L2TP_NET "Укажите подсеть (VPN_L2TP_NET)" "192.168.42.0"
+    fi
+  fi
+  export VPN_L2TP_LOCAL="${VPN_L2TP_NET%.*}.1"
+  export VPN_L2TP_POOL="${VPN_L2TP_NET%.*}.10-${VPN_L2TP_NET%.*}.254"
+
+  # Информация по серверу к которому надо подключаться
+  if [[ "${TYPE_SERVER}" -ne 1 ]]; then
     prompt_until_nonempty VPN_IP "Введите IP конечного VPN (VPN_IP)" "localhost"
     prompt_until_nonempty VPN_USER "Введите имя пользователя конечного VPN (VPN_USER)" "login"
     prompt_until_nonempty VPN_PASSWORD "Введите пароль конечного VPN (VPN_PASSWORD)" "password"
     export VPN_PSK="$PSK_KEY"
-  else
-    prompt_until_nonempty VPN_L2TP_NET "Укажите подсеть (VPN_L2TP_NET)" "192.168.42.0"
-    export VPN_L2TP_LOCAL="${VPN_L2TP_NET%.*}.1"
-    export VPN_L2TP_POOL="${VPN_L2TP_NET%.*}.10-${VPN_L2TP_NET%.*}.254"
   fi
 
-  prompt_until_nonempty_yn INSTALL_BOT "Выполнять ли установку бота на текущий сервер?" "Y"
+  # Информация о пользователе, который будет подключаться как пользователь конечного сервера
+  if [[ "${TYPE_SERVER}" -eq 3 ]]; then
+    prompt_until_nonempty VPN_USER_END "Введите имя пользователя текущего конечного VPN (VPN_USER_END)" "login"
+    prompt_until_nonempty VPN_PASSWORD_END "Введите пароль текущего конечного VPN (VPN_PASSWORD_END)" "password"
+  fi
+
+  # Бот
+  prompt_until_nonempty_yn INSTALL_BOT "Выполнять ли установку бота на текущий сервер?" "N"
   if [[ "${INSTALL_BOT}" =~ ^[Yy]$ ]]; then
     prompt_until_nonempty BOT_TOKEN "Введите Telegram bot token (BOT_TOKEN)" "NONE"
     prompt_until_nonempty USE_VPN "Использовать vpn для бота" "Y"
@@ -138,6 +161,9 @@ VPN_L2TP_NET="$VPN_L2TP_NET/16"
 VPN_L2TP_LOCAL="$VPN_L2TP_LOCAL"
 VPN_L2TP_POOL="$VPN_L2TP_POOL"
 EOF
+  cat >> "$CURRENT_DIR/vpn/login_password_vpn" <<EOF
+"$USERNAME_LOGIN" l2tpd "$USERNAME_PASSWORD" *
+EOF
   mkdir -p "$CURRENT_DIR/vpn/ikev2"
   touch "$CURRENT_DIR/vpn/ppp_connect.tdb"
   touch "$CURRENT_DIR/vpn/login_password_vpn"
@@ -153,10 +179,10 @@ EOF
 
   cat ./docker/composeVPN.yaml >> ./others/docker-compose.yaml
 
-  if [[ "$MIDDLE_SERVER" =~ ^[Yy]$ ]]; then
-    cp ./docker/DockerfileAllVPN ./others/DockerfileVPN
-  else
+  if [[ "${TYPE_SERVER}" -eq 1 ]]; then
     cp ./docker/DockerfileOnlyInVPN ./others/DockerfileVPN
+  else
+    cp ./docker/DockerfileAllVPN ./others/DockerfileVPN
   fi
 
   # Выбор ОС образа VPN
@@ -175,8 +201,9 @@ EOF
   fi
 }
 
+
 setup_middle_server() {
-  if [[ "$MIDDLE_SERVER" =~ ^[Nn]$ ]]; then
+  if [[ "${TYPE_SERVER}" -eq 1 ]]; then
     return
   fi
   #setup sing-box
@@ -184,11 +211,12 @@ setup_middle_server() {
   cd "$CURRENT_DIR/tg_bot_vpn_l2/config/"
   cp ./sing-box/config_eth0.json "$CURRENT_DIR/sing-box/config.json"
   cp ./sing-box/select_config.sh "$CURRENT_DIR/sing-box/select_config.sh"
+  cp ./sing-box/config_eth0.json "$CURRENT_DIR/sing-box/config_eth0.json"
+  cp ./sing-box/config_vpn.json "$CURRENT_DIR/sing-box/config_vpn.json"
   chmod +x "$CURRENT_DIR/sing-box/select_config.sh"
 
-  touch ../others/iptables_setup.sh
-  echo "/opt/src/iptables_setup.sh" >> "$CURRENT_DIR/vpn/ip-up"
-  cat ./sing-box/sing_init.sh >> ../others/iptables_setup.sh
+  echo "/opt/src/iptables_setup.sh \$@" >> "$CURRENT_DIR/vpn/ip-up"
+  cp ./sing-box/iptables_setup.sh ../others/iptables_setup.sh
   sed -i "s|VPN_L2TP_NET|${VPN_L2TP_NET}|g" ../others/iptables_setup.sh
 
   #setup out_vpn
@@ -203,8 +231,18 @@ setup_middle_server() {
   cat client.conf >> "$CURRENT_DIR/vpn/ikev2/ipsec.conf"
   sed -i "s|VPN_IP|$VPN_IP|g" "$CURRENT_DIR/vpn/ikev2/ipsec.conf"
 
+  # setup end_vpn
+  if [[ "${TYPE_SERVER}" -eq 3 ]]; then
+    cat >> "$CURRENT_DIR/vpn/login_password_vpn" <<EOF
+"$VPN_USER_END" l2tpd "$VPN_PASSWORD_END" * #COMB
+EOF
+    cd "$CURRENT_DIR/tg_bot_vpn_l2/config/"
+    cp ./sing-box/config_in_vpn.json "$CURRENT_DIR/sing-box/config_vpn.json"
+  fi
+
   cd "$CURRENT_DIR/tg_bot_vpn_l2/"
   cat ./docker/composeSingBox.yaml >> ./others/docker-compose.yaml
+
 }
 
 setup_bot() {

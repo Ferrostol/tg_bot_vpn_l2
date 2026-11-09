@@ -51,8 +51,11 @@ def write_users_to_file(users, server=None):
         # Открываем файл для записи
         with open(config.output_file, 'w') as file:
             # Записываем данные пользователей в файл
-            for username, password in users:
-                file.write(f'"{username}" l2tpd "{password}" *\n')
+            for username, password, combine in users:
+                if combine:
+                    file.write(f'"{username}" l2tpd "{password}" * #COMB\n')
+                else:
+                    file.write(f'"{username}" l2tpd "{password}" *\n')
         return None
     except Exception as e:
         return e
@@ -111,5 +114,5 @@ def get_current_users_vpn():
         for passw in lines:
             info = passw.split()
             if info[1] == "l2tpd":
-                users.append((info[0].strip('"'), info[2].strip('"')))
+                users.append((info[0].strip('"'), info[2].strip('"')), info[4] == "#COMB")
         return users
