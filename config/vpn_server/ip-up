@@ -1,3 +1,4 @@
+#!/bin/sh
 value=$(</etc/ppp/multi_connect.conf)
 
 if [[ "$value" == "no" ]]; then
