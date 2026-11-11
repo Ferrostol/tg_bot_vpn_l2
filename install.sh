@@ -259,6 +259,9 @@ setup_bot() {
 
   cd "$CURRENT_DIR/tg_bot_vpn_l2/"
   cat ./docker/composeBot.yaml >> ./others/docker-compose.yaml
+
+  cd "$CURRENT_DIR/tg_bot_vpn_l2/main_bot"
+  git clone https://github.com/Ferrostol/butnlib.git
 }
 
 start_docker() {

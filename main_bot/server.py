@@ -1,8 +1,6 @@
 import re
 import subprocess
 import os
-import shutil
-import sys
 
 import config
 from config import set_key_env
@@ -114,5 +112,9 @@ def get_current_users_vpn():
         for passw in lines:
             info = passw.split()
             if info[1] == "l2tpd":
-                users.append((info[0].strip('"'), info[2].strip('"')), info[4] == "#COMB")
+                users.append((
+                    info[0].strip('"'),
+                    info[2].strip('"'),
+                    info[4] == "#COMB" if len(info) > 4 else False
+                ))
         return users

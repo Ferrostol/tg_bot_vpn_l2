@@ -1,9 +1,4 @@
-certifi
-charset-normalizer
-idna
 prettytable
 pyTelegramBotAPI
 python-dotenv
 requests
-urllib3
-wcwidth
