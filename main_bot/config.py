@@ -10,7 +10,7 @@ output_file = 'others/login_password_vpn'   # Файл с текущими по�
 ipsec_file = 'others/ipsec_key.secrets'       # Файл с секретным ключем
 multi_connect_conf = 'others/multi_connect.conf'          # Файл с конфигурацией работы vpn в мультиконнект режиме
 
-token = None
+token = ""
 vpn_request = None
 multi_connect = None
 multi_connect_key = 'MULTI_CONNECT'
