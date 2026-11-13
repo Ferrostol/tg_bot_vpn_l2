@@ -1,6 +1,15 @@
-Установка на сервере Debian
+Установка на сервере в docker(часть функций бота не работают в docker режиме)
 
-Установка на сервер в docker(часть функций бота не работают в docker режиме)
+
+Устанока на сервер с выбором ветки
+
+    mkdir -p /app && cd /app
+    apt install curl -y
+    curl https://raw.githubusercontent.com/Ferrostol/tg_bot_vpn_l2/refs/heads/final/install_select.sh > install.sh
+    chmod +x install.sh
+    ./install.sh
+
+Установка на сервер из основной ветки
     
     mkdir -p /app && cd /app
     apt install curl -y
@@ -8,7 +17,9 @@
     chmod +x install.sh
     ./install.sh
 
-После этого пишем боту /start и регистрируемся первыми в качестве администратора
+
+
+После установки пишем боту /start и регистрируемся первыми в качестве администратора
 
 
 Удаление на сервере в docker

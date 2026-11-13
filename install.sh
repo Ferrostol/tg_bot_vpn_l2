@@ -2,7 +2,7 @@
 set -euo pipefail
 CURRENT_DIR="$(pwd)"
 
-BRANCH="final"
+BRANCH="${1:-final}"
 
 # Дополнительные функции
 prompt_until_nonempty() {
