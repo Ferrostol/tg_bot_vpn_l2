@@ -183,8 +183,6 @@ setup_middle_server() {
   chmod +x "$CURRENT_DIR/sing-box/select_config.sh"
 
   echo "/opt/src/iptables_setup.sh \$@" >> "$CURRENT_DIR/vpn/ip-up"
-  cp ./sing-box/iptables_setup.sh ../others/iptables_setup.sh
-  sed -i "s|VPN_L2TP_NET|${VPN_L2TP_NET}|g" ../others/iptables_setup.sh
 
   #setup out_vpn
   mkdir -p "$CURRENT_DIR/vpn/xl2tpd_config"
