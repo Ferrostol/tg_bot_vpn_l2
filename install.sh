@@ -59,24 +59,30 @@ configure_vars() {
   if [[ "$AUTO_NET" =~ ^[Yy]$ ]]; then
     if [[ "${TYPE_SERVER}" -eq 2 ]]; then
       export VPN_L2TP_NET="10.1.0.0"
+      export VPN_IKEV2_NET="10.2.0.0"
     else
       export VPN_L2TP_NET="192.168.42.0"
+      export VPN_IKEV2_NET="192.168.43.0"
     fi
   else
     if [[ "${TYPE_SERVER}" -eq 2 ]]; then
       prompt_until_nonempty VPN_L2TP_NET "Укажите подсеть (VPN_L2TP_NET)" "10.1.0.0"
+      prompt_until_nonempty VPN_IKEV2_NET "Укажите подсеть IKEV2 (VPN_IKEV2_NET)" "10.2.0.0"
     else
       prompt_until_nonempty VPN_L2TP_NET "Укажите подсеть (VPN_L2TP_NET)" "192.168.42.0"
+      prompt_until_nonempty VPN_IKEV2_NET "Укажите подсеть IKEV2 (VPN_IKEV2_NET)" "192.168.43.0"
     fi
   fi
   export VPN_L2TP_LOCAL="${VPN_L2TP_NET%.*}.1"
   export VPN_L2TP_POOL="${VPN_L2TP_NET%.*}.10-${VPN_L2TP_NET%.*}.254"
+  export VPN_IKEV2_POOL="${VPN_IKEV2_NET%.*}.10-${VPN_IKEV2_NET%.*}.254"
 
   # Информация по серверу к которому надо подключаться
   if [[ "${TYPE_SERVER}" -ne 1 ]]; then
     prompt_until_nonempty VPN_IP "Введите IP конечного VPN (VPN_IP)" "localhost"
     prompt_until_nonempty VPN_USER "Введите имя пользователя конечного VPN (VPN_USER)" "login"
     prompt_until_nonempty VPN_PASSWORD "Введите пароль конечного VPN (VPN_PASSWORD)" "password"
+    prompt_until_nonempty CERT_LINK "Введите название сертификата для соединения IKEV2 (CERT_LINK)" "cert"
     export VPN_PSK="$PSK_KEY"
   fi
 
@@ -92,6 +98,13 @@ configure_vars() {
     prompt_until_nonempty BOT_TOKEN "Введите Telegram bot token (BOT_TOKEN)" "NONE"
     prompt_until_nonempty USE_VPN "Использовать vpn для бота" "Y"
   fi
+
+
+  prompt_until_nonempty_yn BACKUP "Имеются ли у вас бэкапы?" "N"
+  if [[ "${BACKUP}" =~ ^[Yy]$ ]]; then
+    prompt_until_nonempty BACKUP_PATH "Укажите путь до папки с бэкапами" "."
+  fi
+
 }
 
 
@@ -160,6 +173,8 @@ VPN_DNS_NAME="$DOMAIN"
 VPN_L2TP_NET="$VPN_L2TP_NET/16"
 VPN_L2TP_LOCAL="$VPN_L2TP_LOCAL"
 VPN_L2TP_POOL="$VPN_L2TP_POOL"
+VPN_XAUTH_NET="$VPN_IKEV2_NET/16"
+VPN_XAUTH_POOL="$VPN_IKEV2_POOL"
 EOF
   cat >> "$CURRENT_DIR/vpn/login_password_vpn" <<EOF
 "$USERNAME_LOGIN" l2tpd "$USERNAME_PASSWORD" *
@@ -199,6 +214,14 @@ EOF
     sed -i "s|/run/ppp/|/run/|g" ./others/DockerfileVPN
     sed -i "s|/run/ppp/|/run/|g" ./others/docker-compose.yaml
   fi
+
+  if [[ "${BACKUP}" =~ ^[Yy]$ ]]; then
+    cd "$CURRENT_DIR"
+    mkdir -p "$CURRENT_DIR/vpn/ikev2/backup"
+    cp "$BACKUP_PATH/cert9.db" "$CURRENT_DIR/vpn/ikev2/backup/cert9.db"
+    cp "$BACKUP_PATH/key4.db" "$CURRENT_DIR/vpn/ikev2/backup/key4.db"
+    cp "$BACKUP_PATH/pkcs11.txt" "$CURRENT_DIR/vpn/ikev2/backup/pkcs11.txt"
+  fi
 }
 
 
@@ -209,11 +232,26 @@ setup_middle_server() {
   #setup sing-box
   mkdir -p "$CURRENT_DIR/sing-box"
   cd "$CURRENT_DIR/tg_bot_vpn_l2/config/"
-  cp ./sing-box/config_eth0.json "$CURRENT_DIR/sing-box/config.json"
+
+
+  cp ./sing-box/config_direct.json "$CURRENT_DIR/sing-box/config.json"
+  sed -i "s|ETH_INTERFACE|eth0|g" "$CURRENT_DIR/sing-box/config.json"
+  cp ./sing-box/config_direct.json "$CURRENT_DIR/sing-box/config_eth0.json"
+  sed -i "s|ETH_INTERFACE|eth0|g" "$CURRENT_DIR/sing-box/config_eth0.json"
+  cp ./sing-box/config_route.json "$CURRENT_DIR/sing-box/config_route.json"
   cp ./sing-box/select_config.sh "$CURRENT_DIR/sing-box/select_config.sh"
-  cp ./sing-box/config_eth0.json "$CURRENT_DIR/sing-box/config_eth0.json"
-  cp ./sing-box/config_vpn.json "$CURRENT_DIR/sing-box/config_vpn.json"
   chmod +x "$CURRENT_DIR/sing-box/select_config.sh"
+
+
+  # setup end_vpn
+  if [[ "${TYPE_SERVER}" -eq 3 ]]; then
+    cat >> "$CURRENT_DIR/vpn/login_password_vpn" <<EOF
+"$VPN_USER_END" l2tpd "$VPN_PASSWORD_END" * #COMB
+EOF
+    cd "$CURRENT_DIR/tg_bot_vpn_l2/config/"
+    cp ./sing-box/config_direct.json "$CURRENT_DIR/sing-box/config_route.json"
+    sed -i "s|ETH_INTERFACE|vpn|g" "$CURRENT_DIR/sing-box/config_route.json"
+  fi
 
   echo "/opt/src/iptables_setup.sh \$@" >> "$CURRENT_DIR/vpn/ip-up"
 
@@ -226,17 +264,11 @@ setup_middle_server() {
   cp options.l2tpd.client "$CURRENT_DIR/vpn/xl2tpd_config/options.l2tpd.client"
   sed -i "s|VPN_USER|$VPN_USER|g" "$CURRENT_DIR/vpn/xl2tpd_config/options.l2tpd.client"
   sed -i "s|VPN_PASSWORD|$VPN_PASSWORD|g" "$CURRENT_DIR/vpn/xl2tpd_config/options.l2tpd.client"
-  cat client.conf >> "$CURRENT_DIR/vpn/ikev2/ipsec.conf"
+  cat l2tp_client.conf >> "$CURRENT_DIR/vpn/ikev2/ipsec.conf"
+  cat ikev2_client.conf >> "$CURRENT_DIR/vpn/ikev2/ipsec.conf"
   sed -i "s|VPN_IP|$VPN_IP|g" "$CURRENT_DIR/vpn/ikev2/ipsec.conf"
-
-  # setup end_vpn
-  if [[ "${TYPE_SERVER}" -eq 3 ]]; then
-    cat >> "$CURRENT_DIR/vpn/login_password_vpn" <<EOF
-"$VPN_USER_END" l2tpd "$VPN_PASSWORD_END" * #COMB
-EOF
-    cd "$CURRENT_DIR/tg_bot_vpn_l2/config/"
-    cp ./sing-box/config_in_vpn.json "$CURRENT_DIR/sing-box/config_vpn.json"
-  fi
+  sed -i "s|DOMAIN|$DOMAIN|g" "$CURRENT_DIR/vpn/ikev2/ipsec.conf"
+  sed -i "s|CERT_LINK|$CERT_LINK|g" "$CURRENT_DIR/vpn/ikev2/ipsec.conf"
 
   cd "$CURRENT_DIR/tg_bot_vpn_l2/"
   cat ./docker/composeSingBox.yaml >> ./others/docker-compose.yaml
@@ -254,6 +286,10 @@ setup_bot() {
   [[ "$MULTI_CONNECT" =~ ^[Yy]$ ]] && echo "MULTI_CONNECT=Y" >> "$CURRENT_DIR/bot/.env"
   [[ "$MULTI_CONNECT" =~ ^[Nn]$ ]] && echo "MULTI_CONNECT=N"  >> "$CURRENT_DIR/bot/.env"
   touch "$CURRENT_DIR/bot/users.db"
+  if [[ "${BACKUP}" =~ ^[Yy]$ ]]; then
+    cd "$CURRENT_DIR"
+    cp "$BACKUP_PATH/users.db" "$CURRENT_DIR/bot/users.db"
+  fi
 
   cd "$CURRENT_DIR/tg_bot_vpn_l2/"
   cat ./docker/composeBot.yaml >> ./others/docker-compose.yaml
