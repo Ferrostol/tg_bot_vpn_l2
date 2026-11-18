@@ -14,7 +14,7 @@
     {
       "type": "direct",
       "tag": "inet",
-      "bind_interface": "vpn"
+      "bind_interface": "ETH_INTERFACE"
     }
   ],
   "route": {

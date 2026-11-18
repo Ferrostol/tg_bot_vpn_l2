@@ -19,7 +19,7 @@ setup_l2tp_con() {
   # 3. Правила TPROXY для адреса пользователя
   if [ -n "$USER_IP" ]; then
     for proto in tcp udp; do
-      RULE=(-s "$USER_IP" -p "$proto" -j TPROXY --on-port 12345 --on-ip 127.0.0.1 --tproxy-mark 1)
+      RULE=(-s "$USER_IP" -p "$proto" -j TPROXY --on-port 12345 --on-ip 127.0.0.1 --tproxy-mark 22)
 
       if iptables -t mangle -C PREROUTING "${RULE[@]}" 2>/dev/null; then
         EXISTS=1
@@ -38,11 +38,10 @@ setup_l2tp_con() {
   fi
 }
 
-
 setup_ipsec_con() {
   if [ -n "$PLUTO_PEER_CLIENT" ]; then
     for proto in tcp udp; do
-      RULE=(-s "$PLUTO_PEER_CLIENT" -p "$proto" -j TPROXY --on-port 12345 --on-ip 127.0.0.1 --tproxy-mark 1)
+      RULE=(-s "$PLUTO_PEER_CLIENT" -p "$proto" -j TPROXY --on-port 12345 --on-ip 127.0.0.1 --tproxy-mark 22)
 
       if iptables -t mangle -C PREROUTING "${RULE[@]}" 2>/dev/null; then
         EXISTS=1
@@ -58,8 +57,10 @@ setup_ipsec_con() {
 
 main() {
   # Общая настройка сети - Создаем таблицу маршрутизации для TPROXY
-  ip rule add fwmark 1 table 400 2>/dev/null || true
-  ip route add local default dev lo table 400 2>/dev/null || true
+  if ! ip rule | grep 400; then
+    ip rule add fwmark 22 pref 79 table 400 2>/dev/null || true
+    ip route add local default dev lo table 400 2>/dev/null || true
+  fi
 
   # Определим откуда был вызван скрипт:
   # - Переменная PEERNAME указывает на запуск из ip-up/ip-down.

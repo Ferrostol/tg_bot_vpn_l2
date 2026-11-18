@@ -1,6 +1,6 @@
 {
   "log": {
-    "level": "fatal"
+    "level": "debug"
   },
   "dns": {
     "servers": [
@@ -28,7 +28,7 @@
     {
       "type": "direct",
       "tag": "proxy-out",
-      "bind_interface": "vpn",
+      "bind_interface": "ETH_INTERFACE",
       "domain_resolver": "dns-direct"
     }
   ],
@@ -77,7 +77,7 @@
       {
         "network": "udp",
         "port": 443,
-        "outbound": "reject"
+        "action": "reject"
       },
       { "ip_is_private": true, "outbound": "direct" },
       {
