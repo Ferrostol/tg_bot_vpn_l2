@@ -39,7 +39,6 @@ prompt_until_nonempty_yn() {
 
 # Получение конфигов для запуска
 configure_vars() {
-  prompt_until_nonempty_yn SYSTEM_SETUP "Выполнить базовую настройку системы?" "Y"
   prompt_until_nonempty_yn MIDDLE_SERVER "Текущий сервер является промежуточным?" "Y"
   prompt_until_nonempty OS_SYSTEM "Какую ОС использовать для VPN?(1-Alpine, 2-Debian)" "1"
 
@@ -68,35 +67,6 @@ configure_vars() {
   if [[ "${INSTALL_BOT}" =~ ^[Yy]$ ]]; then
     prompt_until_nonempty BOT_TOKEN "Введите Telegram bot token (BOT_TOKEN)" "NONE"
     prompt_until_nonempty USE_VPN "Использовать vpn для бота" "Y"
-  fi
-}
-
-
-update_kernel() {
-  if [[ "$(uname -r)" == *cloud* ]]; then
-    apt update
-    uname -r
-    apt install linux-image-amd64 -y
-    cd /boot
-    rm -rf *cloud*
-    update-grub
-    sudo rm -f /etc/modprobe.d/dirtyfrag.conf
-    sudo depmod -a
-    apt autoremove -y
-    reboot
-  fi
-}
-
-install_zsh() {
-  if [[ "$SHELL" != */zsh ]]; then
-      apt install zsh -y
-    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-  fi
-}
-
-install_docker() {
-  if ! command -v docker >/dev/null 2>&1; then
-    curl -fsSL https://get.docker.com | sh
   fi
 }
 
@@ -235,13 +205,6 @@ EOF
 
 vpnsetup() {
   configure_vars
-  if [[ "$SYSTEM_SETUP" =~ ^[Yy]$ ]]; then
-    apt update && apt upgrade -y
-    apt install curl net-tools git wget htop btop vim -y
-  fi
-  update_kernel
-  install_zsh
-  install_docker
   uninstall
   echo "$CURRENT_DIR" > /etc/my_vpn_server
   clone_git
